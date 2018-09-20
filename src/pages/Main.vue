@@ -3,7 +3,10 @@
   "en": {
     "addRepositoryMessage": "Why not add some now!",
     "copyToClipboard": "Copy to Clipboard",
+    "copyToClipboardAsText": "Text",
+    "copyToClipboardAsMarkdown": "Markdown",
     "copiedToClipboard": "Copy successful!",
+    "copyToClipboardModeChanged": "Mode changed to ",
     "from": "From",
     "generatedAt": "Generated At",
     "generateReport": "Generate Report",
@@ -31,12 +34,21 @@
     </div>
     <div class="columns" v-if="repositories.length > 0">
       <div class="column">
-        <a :class="generateReportCSS" @click="buildReport">
-          <span>{{$t("generateReport")}}</span>
-        </a>
-        <a class="button is-secondary" v-if="reportData.length > 0" @click="exportReport">
-          <span>{{this.copyToClipboardButtonText}}</span>
-        </a>
+        <div class="field is-grouped">
+          <div class="control">
+            <a :class="generateReportCSS" @click="buildReport">
+              <span>{{$t("generateReport")}}</span>
+            </a>
+          </div>
+
+          <DropdownButton
+            :buttonText="copyToClipboardButtonText"
+            :dropdownData="copyToClipboardDropDownData"
+            @click="exportReport"
+            @selection-made="setCopyToClipboardMode"
+            v-if="reportData.length > 0" />
+
+        </div>
         <textarea id="clipboardHelper"></textarea>
       </div>
     </div>
@@ -77,6 +89,7 @@
 
 <script>
 import ReportRepository from '@/components/reportRepository'
+import DropdownButton from '@/components/dropdownButton'
 let GitHub = require("github-api");
 
 export default {
@@ -84,6 +97,8 @@ export default {
   data () {
     return {
       copyToClipboardButtonText: "",
+      copyToClipboardMode: "text",
+      copyToClipboardDropDownData: [],
       repositories: [],
       reportData: [],
       generateReportCSS: {
@@ -96,10 +111,25 @@ export default {
     }
   },
   methods: {
+    setCopyToClipboardMode: function (mode) {
+      let parent = this;
+      parent.copyToClipboardMode = mode;
+      let copySetting = this.$ls.set("copyToClipboardSetting", mode);
+
+      parent.copyToClipboardButtonText = parent.$t("copyToClipboardModeChanged") + mode;
+      setTimeout(() => {
+        parent.copyToClipboardButtonText = parent.$t("copyToClipboard");
+      }, 2000);
+    },
     exportReport: function () {
       let parent = this;
       let helper = document.getElementById("clipboardHelper");
-      helper.value = parent._convertReportToString();
+
+      if (parent.copyToClipboardMode == "markdown"){
+        helper.value = parent._convertReportToMarkdown();
+      } else {
+        helper.value = parent._convertReportToText();
+      }
       helper.select();
       document.execCommand("copy");
       helper.value = "";
@@ -109,7 +139,7 @@ export default {
         parent.copyToClipboardButtonText = parent.$t("copyToClipboard");
       }, 2000);
     },
-    _convertReportToString: function () {
+    _convertReportToText: function () {
       /* We manually build this instead of just copying the inner text because the formatting
          needs to be different.
        */
@@ -138,10 +168,35 @@ export default {
         }
       }
 
-      parent.reportData.forEach(function (report) {
+      return body;
+    },
+    _convertReportToMarkdown: function () {
+      /* We manually build this instead of just copying the inner text because the formatting
+         needs to be different.
+       */
+      let parent = this;
+      let body = "";
 
-        // Spacer in case there is more than one report.
-      });
+      let total = parent.reportData.length;
+      for (let i = 0; i < total; i) { // i incremented at bottom of loop
+        let report = parent.reportData[i];
+
+        // Headers
+        body += "**" + parent.$t("repo") + ":** " + report.repo + "\n\n";
+        body += "**" + parent.$t("from") + ":** " + report.fromMarker + "\n\n";
+        body += "**" + parent.$t("to") + ":** " + report.toMarker + "\n\n";
+        body += "**" + parent.$t("generatedAt") + ":** " + report.generatedAt + "\n\n";
+
+        // Meat
+        report.data.forEach(function (pr) {
+          body += " * [" + pr.message + "](" + pr.url + ")\n"
+        });
+
+        // Increment the loop and add any spacing if necessary.
+        if (++i < total) {
+          body += "\n\n";
+        }
+      }
 
       return body;
     },
@@ -212,7 +267,6 @@ export default {
 
               let commit = {
                 message: msg,
-                url: "https://github.com/" + repo.key + "/pull/" + number,
                 number: number,
                 isLoading: true
               };
@@ -220,6 +274,7 @@ export default {
               r.getPullRequest(number).then(prResp => {
                 commit.message = prResp.data.title;
                 commit.isLoading = false;
+                commit.url = prResp.data.html_url;
               });
 
               commits.push(commit);
@@ -256,26 +311,41 @@ export default {
     }
   },
   components: {
-    ReportRepository
+    ReportRepository,
+    DropdownButton
   },
   mounted: function() {
       let repositories = [];
       let jsonData = this.$ls.get("repositories");
-      if (jsonData === null || jsonData === undefined) return;
-      let data = JSON.parse(jsonData);
+      let copySetting = this.$ls.get("copyToClipboardSetting");
 
-      data.forEach(element => {
-        repositories.push({
-          token: element.token,
-          owner: element.owner,
-          repository: element.repository,
-          key: element.key,
-          selected: false,
-          fromMarker: null,
-          toMarker: null
+      this.copyToClipboardDropDownData = [
+        { key: "text", display: this.$t("copyToClipboardAsText") },
+        { key: "markdown", display: this.$t("copyToClipboardAsMarkdown") }
+      ];
+
+      if (copySetting) {
+        this.copyToClipboardMode = copySetting;
+      } else {
+        this.copyToClipboardMode = "text";
+      }
+
+      if (jsonData) {
+        let data = JSON.parse(jsonData);
+
+        data.forEach(element => {
+          repositories.push({
+            token: element.token,
+            owner: element.owner,
+            repository: element.repository,
+            key: element.key,
+            selected: false,
+            fromMarker: null,
+            toMarker: null
+          });
         });
-      });
-      this.repositories = repositories;
+        this.repositories = repositories;
+      }
 
       this.copyToClipboardButtonText = this.$t("copyToClipboard");
   }

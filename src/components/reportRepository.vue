@@ -118,10 +118,12 @@ export default {
       selected: false,
       dropdownFromCss: {
         'dropdown': true,
+        'is-right': true,
         'is-active': false
       },
       dropdownToCss: {
         'dropdown': true,
+        'is-right': true,
         'is-active': false
       }
     }
