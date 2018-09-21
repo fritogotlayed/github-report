@@ -46,23 +46,12 @@
         </div>
         <div class="field-body">
           <div class="field">
-            <div :class="dropdownFromCss" v-on:click="dropdownFromClick">
-              <div class="dropdown-trigger">
-                <button class="button" aria-haspopup="true" aria-controls="dropdown-menu-from">
-                  <span>{{fromMarker}}</span>
-                  <span class="icon is-small">
-                    <i class="fas fa-angle-down" aria-hidden="true"></i>
-                  </span>
-                </button>
-              </div>
-              <div class="dropdown-menu" id="dropdown-menu-from" role="menu">
-                <div class="dropdown-content">
-                  <a v-for="tag in tags" :key="tag.node_id" :href="'#' + tag.name" class="dropdown-item">
-                    {{tag.name}}
-                  </a>
-                </div>
-              </div>
-            </div>
+
+            <Dropdown
+              :value="fromMarker"
+              :data="tags"
+              @selection-made="fromSelectionMade" />
+
           </div>
         </div>
       </div>
@@ -77,23 +66,12 @@
         </div>
         <div class="field-body">
           <div class="field">
-            <div :class="dropdownToCss" v-on:click="dropdownToClick">
-              <div class="dropdown-trigger">
-                <button class="button" aria-haspopup="true" aria-controls="dropdown-menu-to">
-                  <span>{{toMarker}}</span>
-                  <span class="icon is-small">
-                    <i class="fas fa-angle-down" aria-hidden="true"></i>
-                  </span>
-                </button>
-              </div>
-              <div class="dropdown-menu" id="dropdown-menu-to" role="menu">
-                <div class="dropdown-content">
-                  <a v-for="tag in tags" :key="tag.node_id" :href="'#' + tag.name" class="dropdown-item">
-                    {{tag.name}}
-                  </a>
-                </div>
-              </div>
-            </div>
+
+            <Dropdown
+              :value="toMarker"
+              :data="tags"
+              @selection-made="toSelectionMade" />
+
           </div>
         </div>
       </div>
@@ -103,6 +81,7 @@
 </template>
 
 <script>
+import Dropdown from '@/components/dropdown'
 let GitHub = require("github-api");
 
 export default {
@@ -115,37 +94,17 @@ export default {
       tags: [],
       fromMarker: '',
       toMarker: '',
-      selected: false,
-      dropdownFromCss: {
-        'dropdown': true,
-        'is-right': true,
-        'is-active': false
-      },
-      dropdownToCss: {
-        'dropdown': true,
-        'is-right': true,
-        'is-active': false
-      }
+      selected: false
     }
   },
   methods: {
-    dropdownFromClick: function (event, a, b, c) {
-      this.dropdownFromCss['is-active'] = !this.dropdownFromCss['is-active'];
-      event.preventDefault();
-
-      if (event.target.text) {
-        this.fromMarker = event.target.text.trim();
-        this.raiseValueChanged();
-      }
+    fromSelectionMade: function (value) {
+      this.fromMarker = value.trim();
+      this.raiseValueChanged();
     },
-    dropdownToClick: function (event) {
-      this.dropdownToCss['is-active'] = !this.dropdownToCss['is-active'];
-      event.preventDefault();
-
-      if (event.target.text) {
-        this.toMarker = event.target.text.trim();
-        this.raiseValueChanged();
-      }
+    toSelectionMade: function (value) {
+      this.toMarker = value.trim();
+      this.raiseValueChanged();
     },
     activate: function () {
       this.selected = true;
@@ -171,13 +130,16 @@ export default {
       });
       let repo = gh.getRepo(this.value.key)
       let parent = this;
-      repo.listTags().then(function(resp){
-        parent.tags = resp.data;
-        parent.tags.unshift({node_id: "0", name: "HEAD"});
+      repo.listTags().then(function(resp) {
+        resp.data.forEach(t => {
+          parent.tags.push({key: t.node_id, display: t.name})
+        });
+        parent.tags.unshift({key: "0", display: "HEAD"});
       });
     }
   },
   components: {
+    Dropdown
   },
   mounted: function() {
   }
