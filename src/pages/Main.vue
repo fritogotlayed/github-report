@@ -245,9 +245,23 @@ export default {
       }
 
       return new Promise((resolve, reject) => {
-        let gh = new GitHub({
-          token: repo.token
-        });
+        let gh = null;
+        if (repo.enterpriseUrl){
+          let url = repo.enterpriseUrl;
+
+          if (!url.endsWith("/")) {
+            url += "/";
+          }
+          url += "api/v3"
+
+          gh = new GitHub({
+            token: repo.token
+          }, url);
+        } else {
+          gh = new GitHub({
+            token: repo.token
+          });
+        }
         let r = gh.getRepo(repo.key)
         r.compareBranches(repo.fromMarker, repo.toMarker).then(resp => {
           if (resp.status !== 200) reject('Comparing branches returned 200.')
@@ -338,6 +352,7 @@ export default {
             token: element.token,
             owner: element.owner,
             repository: element.repository,
+            enterpriseUrl: element.enterpriseUrl,
             key: element.key,
             selected: false,
             fromMarker: null,

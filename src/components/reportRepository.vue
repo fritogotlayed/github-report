@@ -125,9 +125,23 @@ export default {
       this.$emit('input', this.value);
     },
     fetchTags: function () {
-      let gh = new GitHub({
-        token: this.value.token
-      });
+      let gh = null;
+      if (this.value.enterpriseUrl){
+        let url = this.value.enterpriseUrl;
+
+        if (!url.endsWith("/")) {
+          url += "/";
+        }
+        url += "api/v3"
+
+        gh = new GitHub({
+          token: this.value.token
+        }, url);
+      } else {
+        gh = new GitHub({
+          token: this.value.token
+        });
+      }
       let repo = gh.getRepo(this.value.key)
       let parent = this;
       repo.listTags().then(function(resp) {

@@ -56,7 +56,7 @@ export default {
   methods: {
     addRepo: function(event) {
       let parts = event.repository.split('/');
-      this.repositories.push({key: event.repository, owner: parts[0], repository: parts[1], token: event.token});
+      this.repositories.push({key: event.repository, owner: parts[0], repository: parts[1], token: event.token, enterpriseUrl: event.enterpriseUrl});
       this.$ls.set("repositories", JSON.stringify(this.repositories));
     },
     deleteRepo: function(repository) {

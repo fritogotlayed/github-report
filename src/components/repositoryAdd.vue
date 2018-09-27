@@ -25,7 +25,7 @@
         <span class="icon is-small is-left"><i class="fas fa-key"></i></span>
       </template>
     </formInput>
-    <formInput :label="$t('enterpriseUrl')" :placeholder="$t('enterpriseUrlPlaceholder')" name="EnterpriseUrl" v-model="enterpriseUrl" :disabled="true">
+    <formInput :label="$t('enterpriseUrl')" :placeholder="$t('enterpriseUrlPlaceholder')" name="EnterpriseUrl" v-model="enterpriseUrl">
       <template slot="decoration">
         <span class="icon is-small is-left"><i class="fab fa-github"></i></span>
       </template>
@@ -58,7 +58,7 @@ export default {
       this.addingRepository = true;
       let parts = this.repository.split('/')
       if (parts.length === 2 && this.accessToken.trim().length !== 0) {
-        this.$emit('repository-added', {repository: this.repository, token: this.accessToken})
+        this.$emit('repository-added', {repository: this.repository, token: this.accessToken, enterpriseUrl: this.enterpriseUrl})
         this.clearForm();
       } else {
         // TODO: Error message
