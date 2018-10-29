@@ -47,9 +47,10 @@
         <div class="field-body">
           <div class="field">
 
-            <Dropdown
+            <DiffDropdown
               :value="fromMarker"
-              :data="tags"
+              :tags="tags"
+              :branches="branches"
               @selection-made="fromSelectionMade" />
 
           </div>
@@ -67,9 +68,10 @@
         <div class="field-body">
           <div class="field">
 
-            <Dropdown
+            <DiffDropdown
               :value="toMarker"
-              :data="tags"
+              :tags="tags"
+              :branches="branches"
               @selection-made="toSelectionMade" />
 
           </div>
@@ -81,7 +83,7 @@
 </template>
 
 <script>
-import Dropdown from '@/components/dropdown'
+import DiffDropdown from '@/components/diffDropdown'
 let GitHub = require("github-api");
 
 export default {
@@ -92,6 +94,7 @@ export default {
   data () {
     return {
       tags: [],
+      branches: [],
       fromMarker: '',
       toMarker: '',
       selected: false
@@ -108,8 +111,11 @@ export default {
     },
     activate: function () {
       this.selected = true;
-      if (this.tags.length ===0) {
+      if (this.tags.length ===0 ) {
         this.fetchTags();
+      }
+      if (this.branches.length === 0) {
+        this.fetchBranches();
       }
     },
     deactivate: function () {
@@ -123,6 +129,32 @@ export default {
       this.value.fromMarker = this.fromMarker;
       this.value.selected = this.selected;
       this.$emit('input', this.value);
+    },
+    fetchBranches: function () {
+      let gh = null;
+      if (this.value.enterpriseUrl){
+        let url = this.value.enterpriseUrl;
+
+        if (!url.endsWith("/")) {
+          url += "/";
+        }
+        url += "api/v3"
+
+        gh = new GitHub({
+          token: this.value.token
+        }, url);
+      } else {
+        gh = new GitHub({
+          token: this.value.token
+        });
+      }
+      let repo = gh.getRepo(this.value.key)
+      let parent = this;
+      repo.listBranches().then(resp => {
+        resp.data.forEach(b => {
+          parent.branches.push({key: b.name, display: b.name})
+        })
+      })
     },
     fetchTags: function () {
       let gh = null;
@@ -147,13 +179,12 @@ export default {
       repo.listTags().then(function(resp) {
         resp.data.forEach(t => {
           parent.tags.push({key: t.node_id, display: t.name})
-        });
-        parent.tags.unshift({key: "0", display: "HEAD"});
-      });
+        })
+      })
     }
   },
   components: {
-    Dropdown
+    DiffDropdown
   },
   mounted: function() {
   }
