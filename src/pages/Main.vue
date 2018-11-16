@@ -12,6 +12,7 @@
     "generateReport": "Generate Report",
     "noRepositoriesMessage": "It appears you do not have any repositories.",
     "repo": "Repo",
+    "reportMode": "Report Mode",
     "to": "To"
   }
 }
@@ -19,6 +20,16 @@
 
 <template>
   <section class="section">
+
+    <div class="columns">
+      <div class="column is-3">
+        <label>{{$t("reportMode")}}</label>
+      </div>
+      <div class="column is-9">
+        <Dropdown :data="availableReportModes" :value="reportMode" @selection-made="reportModeChanged" />
+      </div>
+    </div>
+
     <div class="columns" v-if="repositories.length < 1">
       <div class="column">
         {{$t("noRepositoriesMessage")}}
@@ -32,6 +43,7 @@
         </div>
       </div>
     </div>
+
     <div class="columns" v-if="repositories.length > 0">
       <div class="column">
         <div class="field is-grouped">
@@ -55,32 +67,8 @@
     <div class="columns" v-if="repositories.length > 0">
       <div class="column">
         <div class="content">
-          <div v-for="report in reportData" :key="report.repo">
-
-            <div>
-              <strong>{{$t("repo")}}</strong> {{report.repo}}
-            </div>
-
-            <div>
-              <strong>{{$t("from")}}</strong> {{report.fromMarker}}
-            </div>
-
-            <div>
-              <strong>{{$t("to")}}</strong> {{report.toMarker}}
-            </div>
-
-            <div>
-              <strong>{{$t("generatedAt")}}</strong> {{report.generatedAt}}
-            </div>
-
-            <ul class="pr-list">
-              <li v-for="data in report.data" :key="data.url" >
-                <a :href="data.url" target="_blank">{{data.message}}</a>
-                <a class="button is-white is-loading" v-if="data.isLoading"></a>
-            </li>
-            </ul>
-          </div>
-
+          <ReportViewSimple v-if="reportMode == 'simple'" :reportData="reportData"/>
+          <ReportViewByUser v-if="reportMode == 'byUser'" :reportData="reportData"/>
         </div>
       </div>
     </div>
@@ -88,19 +76,29 @@
 </template>
 
 <script>
-import ReportRepository from '@/components/reportRepository'
+import Dropdown from '@/components/dropdown'
 import DropdownButton from '@/components/dropdownButton'
+import ReportRepository from '@/components/reportRepository'
+import ReportExports from '@/classes/reportExports'
+import ReportViewSimple from '@/components/reportViewSimple'
+import ReportViewByUser from '@/components/reportViewByUser'
+
 let GitHub = require("github-api");
 
 export default {
   name: 'Main',
   data () {
     return {
+      availableReportModes: [
+        { key: 'simple', display: 'Simple' },
+        { key: 'byUser', display: 'By User' }
+      ],
       copyToClipboardButtonText: "",
       copyToClipboardMode: "text",
       copyToClipboardDropDownData: [],
       repositories: [],
       reportData: [],
+      reportMode: 'simple',
       generateReportCSS: {
         'is-loading': false,
         'button': true,
@@ -140,64 +138,42 @@ export default {
       }, 2000);
     },
     _convertReportToText: function () {
-      /* We manually build this instead of just copying the inner text because the formatting
-         needs to be different.
-       */
-      let parent = this;
-      let body = "";
-
-      let total = parent.reportData.length;
-      for (let i = 0; i < total; i) { // i incremented at bottom of loop
-        let report = parent.reportData[i];
-
-        // Headers
-        body += parent.$t("repo") + ": " + report.repo + "\n";
-        body += parent.$t("from") + ": " + report.fromMarker + "\n";
-        body += parent.$t("to") + ": " + report.toMarker + "\n";
-        body += parent.$t("generatedAt") + ": " + report.generatedAt + "\n";
-        body += "\n";
-
-        // Meat
-        report.data.forEach(function (pr) {
-          body += "    " + pr.message + " (PR #: " + pr.number + ")\n";
-        });
-
-        // Increment the loop and add any spacing if necessary.
-        if (++i < total) {
-          body += "\n\n";
-        }
+      let re = new ReportExports()
+      let lookup = {
+        repo: this.$t('repo'),
+        from: this.$t('from'),
+        to: this.$t('to'),
+        generatedAt: this.$t('generatedAt')
       }
 
+      let body = undefined;
+      switch (this.reportMode) {
+        case 'byUser':
+          body = re.authorBasedExportAsText(lookup, this.reportData)
+          break;
+        default:
+          body = re.simpleExportAsText(lookup, this.reportData)
+          break;
+      }
       return body;
     },
     _convertReportToMarkdown: function () {
-      /* We manually build this instead of just copying the inner text because the formatting
-         needs to be different.
-       */
-      let parent = this;
-      let body = "";
-
-      let total = parent.reportData.length;
-      for (let i = 0; i < total; i) { // i incremented at bottom of loop
-        let report = parent.reportData[i];
-
-        // Headers
-        body += "**" + parent.$t("repo") + ":** " + report.repo + "\n\n";
-        body += "**" + parent.$t("from") + ":** " + report.fromMarker + "\n\n";
-        body += "**" + parent.$t("to") + ":** " + report.toMarker + "\n\n";
-        body += "**" + parent.$t("generatedAt") + ":** " + report.generatedAt + "\n\n";
-
-        // Meat
-        report.data.forEach(function (pr) {
-          body += " * [" + pr.message + "](" + pr.url + ")\n"
-        });
-
-        // Increment the loop and add any spacing if necessary.
-        if (++i < total) {
-          body += "\n\n";
-        }
+      let re = new ReportExports()
+      let lookup = {
+        repo: this.$t('repo'),
+        from: this.$t('from'),
+        to: this.$t('to'),
+        generatedAt: this.$t('generatedAt')
       }
-
+      let body = undefined;
+      switch (this.reportMode) {
+        case 'byUser':
+          body = re.authorBasedExportAsMarkdown(lookup, this.reportData)
+          break;
+        default:
+          body = re.simpleExportAsMarkdown(lookup, this.reportData)
+          break;
+      }
       return body;
     },
     buildReport: function () {
@@ -289,6 +265,7 @@ export default {
                 commit.message = prResp.data.title;
                 commit.isLoading = false;
                 commit.url = prResp.data.html_url;
+                commit.author = prResp.data.user.login;
               });
 
               commits.push(commit);
@@ -322,45 +299,51 @@ export default {
         let part = commitMessage.substring(startIndex+1, closeIndex);
         return part
       }
+    },
+    reportModeChanged: function(mode) {
+      this.reportMode = mode;
     }
   },
   components: {
     ReportRepository,
-    DropdownButton
+    DropdownButton,
+    ReportViewSimple,
+    ReportViewByUser,
+    Dropdown
   },
   mounted: function() {
-      let repositories = [];
-      let jsonData = this.$ls.get("repositories");
-      let copySetting = this.$ls.get("copyToClipboardSetting");
+    let repositories = [];
+    let jsonData = this.$ls.get("repositories");
+    let copySetting = this.$ls.get("copyToClipboardSetting");
 
-      this.copyToClipboardDropDownData = [
-        { key: "text", display: this.$t("copyToClipboardAsText") },
-        { key: "markdown", display: this.$t("copyToClipboardAsMarkdown") }
-      ];
+    this.copyToClipboardDropDownData = [
+      { key: "text", display: this.$t("copyToClipboardAsText") },
+      { key: "markdown", display: this.$t("copyToClipboardAsMarkdown") }
+    ];
 
-      if (copySetting) {
-        this.copyToClipboardMode = copySetting;
-      } else {
-        this.copyToClipboardMode = "text";
-      }
+    if (copySetting) {
+      this.copyToClipboardMode = copySetting;
+    } else {
+      this.copyToClipboardMode = "text";
+    }
 
-      if (jsonData) {
-        let data = JSON.parse(jsonData);
+    if (jsonData) {
+      let data = JSON.parse(jsonData);
 
-        data.forEach(element => {
-          repositories.push({
-            token: element.token,
-            owner: element.owner,
-            repository: element.repository,
-            enterpriseUrl: element.enterpriseUrl,
-            key: element.key,
-            selected: false,
-            fromMarker: null,
-            toMarker: null
-          });
+      data.forEach(element => {
+        repositories.push({
+          token: element.token,
+          owner: element.owner,
+          repository: element.repository,
+          enterpriseUrl: element.enterpriseUrl,
+          key: element.key,
+          selected: false,
+          fromMarker: null,
+          toMarker: null
         });
-        this.repositories = repositories;
-      }
+      });
+      this.repositories = repositories;
+    }
 
       this.copyToClipboardButtonText = this.$t("copyToClipboard");
   }
