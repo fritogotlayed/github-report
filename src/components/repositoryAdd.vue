@@ -3,7 +3,7 @@
   "en": {
     "accessToken": "Access Token",
     "accessTokenPlaceholder": "12345abcde",
-    "addRepositoryButton": "Add Repository",
+    "addRepositoryButton": "Add",
     "enterpriseUrl": "Enterprise Url (Optional)",
     "enterpriseUrlPlaceholder": "https://github.internal.local",
     "report": "Report",
@@ -30,9 +30,9 @@
         <span class="icon is-small is-left"><i class="fab fa-github"></i></span>
       </template>
     </formInput>
-    <div class="field">
+    <div class="field is-pulled-right">
       <div class="control">
-        <button class="button is-primary is-pulled-right" @click="addRepository" :disabled="addingRepository">{{$t("addRepositoryButton")}}</button>
+        <button class="button is-primary" @click="addRepository" :disabled="addingRepository">{{$t("addRepositoryButton")}}</button>
       </div>
     </div>
   </div>

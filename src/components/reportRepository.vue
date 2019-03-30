@@ -84,7 +84,7 @@
 
 <script>
 import DiffDropdown from '@/components/diffDropdown'
-let GitHub = require("github-api");
+import GithubApi from '@/classes/githubApi.js'
 
 export default {
   name: 'ReportRepository',
@@ -140,18 +140,17 @@ export default {
         }
         url += "api/v3"
 
-        gh = new GitHub({
+        gh = new GithubApi({
           token: this.value.token
         }, url);
       } else {
-        gh = new GitHub({
+        gh = new GithubApi({
           token: this.value.token
         });
       }
-      let repo = gh.getRepo(this.value.key)
       let parent = this;
-      repo.listBranches().then(resp => {
-        resp.data.forEach(b => {
+      gh.getBranches(this.value.key).then(data => {
+        data.forEach(b => {
           parent.branches.push({key: b.name, display: b.name})
         })
       })
@@ -166,18 +165,17 @@ export default {
         }
         url += "api/v3"
 
-        gh = new GitHub({
+        gh = new GithubApi({
           token: this.value.token
         }, url);
       } else {
-        gh = new GitHub({
+        gh = new GithubApi({
           token: this.value.token
         });
       }
-      let repo = gh.getRepo(this.value.key)
       let parent = this;
-      repo.listTags().then(function(resp) {
-        resp.data.forEach(t => {
+      gh.getTags(this.value.key).then(data => {
+        data.forEach(t => {
           parent.tags.push({key: t.node_id, display: t.name})
         })
       })

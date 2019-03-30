@@ -1,8 +1,10 @@
 <i18n>
 {
   "en": {
-    "githubReport": "GitHub Report",
-    "repositories": "Repositories"
+    "githubUtilities": "GitHub Utilities",
+    "report": "Report",
+    "settings": "Settings",
+    "prWatcher": "PR Watcher"
   }
 }
 </i18n>
@@ -11,7 +13,7 @@
   <nav class="navbar is-dark is-fixed-top" role="navigation" aria-label="main navigation">
     <div class="navbar-brand">
       <router-link class="navbar-item" :to="{name:'Main'}">
-        <label>{{$t('githubReport')}}</label>
+        <label>{{$t('githubUtilities')}}</label>
       </router-link>
       <div v-bind:class="navBurgerCss" v-on:click="navBurgerClick">
         <span></span>
@@ -22,7 +24,9 @@
     <div v-bind:class="menuBurgerCss">
       <div class="navbar-start">
         <!-- navbar items -->
-        <a class="navbar-item" v-on:click="_navHelper({name: 'Repositories'})">{{$t('repositories')}}</a>
+        <a class="navbar-item" v-on:click="_navHelper({name: 'Report'})">{{$t('report')}}</a>
+        <a class="navbar-item" v-on:click="_navHelper({name: 'PrWatcher'})">{{$t('prWatcher')}}</a>
+        <a class="navbar-item" v-on:click="_navHelper({name: 'Settings'})">{{$t('settings')}}</a>
       </div>
       <div class="navbar-end">
         <!-- navbar items -->
