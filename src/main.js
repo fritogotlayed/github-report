@@ -34,8 +34,9 @@ new Vue({
   i18n,
   store,
   localStorage,
-  el: '#app',
+  // el: '#app',
   router,
-  components: { App },
-  template: '<App/>'
-})
+  // components: { App },
+  // template: '<App/>'
+  render: h => h(App),
+}).$mount('#app')
