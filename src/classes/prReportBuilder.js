@@ -56,7 +56,7 @@ export default class PrReportBuilder {
             );
             let isDoNotMerge = false;
             pr.labels.forEach(label => {
-                if (label.name == "Do Not Merge") {
+                if (label.name.toLowerCase() == "do not merge") {
                     isDoNotMerge = true;
                 }
             })
